@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD組み合わせ計算ツール</title>
+    <!-- Tailwind CSSを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Google FontsからInterフォントを読み込み */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+        }
+        /* 入力フィールドの矢印を常に表示 */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">CD組み合わせ計算ツール</h1>
+            <p class="text-gray-500 mt-2">特典に必要な金額から最適なCDの購入枚数を計算します。</p>
+        </div>
+
+        <!-- 入力フォーム -->
+        <div class="space-y-6">
+            <div>
+                <label for="privilege1" class="flex justify-between items-center text-lg font-medium text-gray-700">
+                    <span>特典① (3,000円以上)</span>
+                    <span class="text-sm font-normal text-gray-500">¥3,000</span>
+                </label>
+                <input type="number" id="privilege1" min="0" value="0" class="mt-2 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            </div>
+            <div>
+                <label for="privilege2" class="flex justify-between items-center text-lg font-medium text-gray-700">
+                    <span>特典② (5,000円以上)</span>
+                    <span class="text-sm font-normal text-gray-500">¥5,000</span>
+                </label>
+                <input type="number" id="privilege2" min="0" value="0" class="mt-2 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            </div>
+            <div>
+                <label for="privilege3" class="flex justify-between items-center text-lg font-medium text-gray-700">
+                    <span>特典③ (8,000円以上)</span>
+                    <span class="text-sm font-normal text-gray-500">¥8,000</span>
+                </label>
+                <input type="number" id="privilege3" min="0" value="0" class="mt-2 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            </div>
+        </div>
+
+        <!-- 計算ボタン -->
+        <div class="mt-8">
+            <button id="calculateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105">
+                計算する
+            </button>
+        </div>
+
+        <!-- 結果表示エリア -->
+        <div id="result" class="mt-8 pt-6 border-t border-gray-200 hidden">
+             <h2 class="text-xl font-bold text-gray-800 text-center mb-4">計算結果</h2>
+             <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg space-y-3">
+                <p class="text-lg">
+                    <span class="font-semibold text-gray-700">目標合計金額:</span>
+                    <span id="targetAmount" class="font-bold text-blue-800 text-xl ml-2"></span>
+                </p>
+                <hr>
+                <div class="pt-2">
+                    <p class="text-lg font-semibold text-gray-700 mb-2">最適な組み合わせ:</p>
+                    <div class="pl-2 space-y-2 text-lg">
+                        <p>💿 通常盤 (1,540円): <span id="regularCDs" class="font-bold text-gray-800 text-xl ml-2"></span>枚</p>
+                        <p>📀 初回限定盤 (5,060円): <span id="limitedCDs" class="font-bold text-gray-800 text-xl ml-2"></span>枚</p>
+                    </div>
+                </div>
+                <hr>
+                <p class="text-lg mt-2 pt-2">
+                    <span class="font-semibold text-gray-700">最終合計金額:</span>
+                    <span id="totalCost" class="font-bold text-blue-800 text-2xl ml-2"></span>
+                </p>
+             </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 定数定義 ---
+        const PRIVILEGE_PRICES = {
+            p1: 3000,
+            p2: 5000,
+            p3: 8000
+        };
+        const CD_PRICES = {
+            regular: 1540,
+            limited: 5060
+        };
+
+        // --- DOM要素の取得 ---
+        const privilege1Input = document.getElementById('privilege1');
+        const privilege2Input = document.getElementById('privilege2');
+        const privilege3Input = document.getElementById('privilege3');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultDiv = document.getElementById('result');
+        const targetAmountSpan = document.getElementById('targetAmount');
+        const regularCDsSpan = document.getElementById('regularCDs');
+        const limitedCDsSpan = document.getElementById('limitedCDs');
+        const totalCostSpan = document.getElementById('totalCost');
+
+        // --- イベントリスナーの設定 ---
+        calculateBtn.addEventListener('click', calculateCombination);
+
+        /**
+         * 最適なCDの組み合わせを計算し、結果を表示する関数
+         */
+        function calculateCombination() {
+            // --- 1. 入力値から目標金額を計算 ---
+            const numP1 = parseInt(privilege1Input.value) || 0;
+            const numP2 = parseInt(privilege2Input.value) || 0;
+            const numP3 = parseInt(privilege3Input.value) || 0;
+
+            const targetAmount = (numP1 * PRIVILEGE_PRICES.p1) + 
+                                 (numP2 * PRIVILEGE_PRICES.p2) + 
+                                 (numP3 * PRIVILEGE_PRICES.p3);
+
+            // 目標金額が0の場合は何もしない
+            if (targetAmount === 0) {
+                resultDiv.classList.add('hidden');
+                return;
+            }
+
+            // --- 2. 最適な組み合わせを探索 ---
+            let bestCombination = {
+                regular: 0,
+                limited: 0,
+                cost: Infinity // 最小コストを保持するため、初期値は無限大に設定
+            };
+
+            // 値段の高い初回限定盤の枚数を0から増やしていき、各パターンを試す
+            // チェックする上限は、目標金額を初回限定盤の値段で割った数+1で十分
+            const maxLimited = Math.ceil(targetAmount / CD_PRICES.limited) + 1;
+
+            for (let numLimited = 0; numLimited <= maxLimited; numLimited++) {
+                const costFromLimited = numLimited * CD_PRICES.limited;
+                let numRegular = 0;
+                
+                // 初回限定盤だけで目標金額に足りない場合、通常盤で補う
+                if (costFromLimited < targetAmount) {
+                    const remainingAmount = targetAmount - costFromLimited;
+                    // 必要な通常盤の枚数（小数点以下切り上げ）
+                    numRegular = Math.ceil(remainingAmount / CD_PRICES.regular);
+                }
+
+                const currentTotalCost = (numRegular * CD_PRICES.regular) + costFromLimited;
+
+                // これまでに見つかった組み合わせより合計金額が低い場合、最適な組み合わせを更新
+                if (currentTotalCost < bestCombination.cost) {
+                    bestCombination = {
+                        regular: numRegular,
+                        limited: numLimited,
+                        cost: currentTotalCost
+                    };
+                }
+            }
+
+            // --- 3. 結果を表示 ---
+            targetAmountSpan.textContent = `¥ ${targetAmount.toLocaleString()}`;
+            regularCDsSpan.textContent = bestCombination.regular;
+            limitedCDsSpan.textContent = bestCombination.limited;
+            totalCostSpan.textContent = `¥ ${bestCombination.cost.toLocaleString()}`;
+            
+            resultDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
