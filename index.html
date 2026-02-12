@@ -19,7 +19,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-10">
     <div class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
         
         <div class="text-center mb-8">
@@ -29,6 +29,14 @@
 
         <!-- 入力フォーム -->
         <div class="space-y-6">
+            <!-- 追加された1,500円特典 -->
+            <div>
+                <label for="privilege0" class="flex justify-between items-center text-lg font-medium text-gray-700">
+                    <span>特典 (1,500円以上)</span>
+                    <span class="text-sm font-normal text-gray-500">¥1,500</span>
+                </label>
+                <input type="number" id="privilege0" min="0" value="0" class="mt-2 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            </div>
             <div>
                 <label for="privilege1" class="flex justify-between items-center text-lg font-medium text-gray-700">
                     <span>特典① (3,000円以上)</span>
@@ -72,6 +80,7 @@
                     <p class="text-lg font-semibold text-gray-700 mb-2">最適な組み合わせ:</p>
                     <div class="pl-2 space-y-2 text-lg">
                         <p>💿 通常盤 (1,540円): <span id="regularCDs" class="font-bold text-gray-800 text-xl ml-2"></span>枚</p>
+                        <p>過剰分: <span id="overRegular" class="text-sm text-gray-500"></span></p>
                         <p>📀 初回限定盤 (5,060円): <span id="limitedCDs" class="font-bold text-gray-800 text-xl ml-2"></span>枚</p>
                     </div>
                 </div>
@@ -88,6 +97,7 @@
     <script>
         // --- 定数定義 ---
         const PRIVILEGE_PRICES = {
+            p0: 1500, // 新しく追加された特典
             p1: 3000,
             p2: 5000,
             p3: 8000
@@ -98,6 +108,7 @@
         };
 
         // --- DOM要素の取得 ---
+        const privilege0Input = document.getElementById('privilege0');
         const privilege1Input = document.getElementById('privilege1');
         const privilege2Input = document.getElementById('privilege2');
         const privilege3Input = document.getElementById('privilege3');
@@ -116,11 +127,13 @@
          */
         function calculateCombination() {
             // --- 1. 入力値から目標金額を計算 ---
+            const numP0 = parseInt(privilege0Input.value) || 0;
             const numP1 = parseInt(privilege1Input.value) || 0;
             const numP2 = parseInt(privilege2Input.value) || 0;
             const numP3 = parseInt(privilege3Input.value) || 0;
 
-            const targetAmount = (numP1 * PRIVILEGE_PRICES.p1) + 
+            const targetAmount = (numP0 * PRIVILEGE_PRICES.p0) +
+                                 (numP1 * PRIVILEGE_PRICES.p1) + 
                                  (numP2 * PRIVILEGE_PRICES.p2) + 
                                  (numP3 * PRIVILEGE_PRICES.p3);
 
@@ -138,7 +151,6 @@
             };
 
             // 値段の高い初回限定盤の枚数を0から増やしていき、各パターンを試す
-            // チェックする上限は、目標金額を初回限定盤の値段で割った数+1で十分
             const maxLimited = Math.ceil(targetAmount / CD_PRICES.limited) + 1;
 
             for (let numLimited = 0; numLimited <= maxLimited; numLimited++) {
@@ -169,6 +181,10 @@
             regularCDsSpan.textContent = bestCombination.regular;
             limitedCDsSpan.textContent = bestCombination.limited;
             totalCostSpan.textContent = `¥ ${bestCombination.cost.toLocaleString()}`;
+            
+            // お釣り（目標からの超過分）の計算表示などが必要な場合はここに追加
+            const overage = bestCombination.cost - targetAmount;
+            document.getElementById('overRegular').textContent = `(目標より ¥${overage.toLocaleString()} 多め)`;
             
             resultDiv.classList.remove('hidden');
         }
